@@ -1,0 +1,28 @@
+body {
+    background-color: #1F6069;
+    font-family:Arial, Helvetica, sans-serif;
+    margin: 40px;
+}
+
+h1, h2 {
+    color: #FF6B6B;
+    margin-bottom: 20px;
+}
+
+h3 {
+    color: #46BAC2;
+}
+
+p {
+    color: white;
+}
+
+ul {
+    color: white;
+    padding-left: 20px;
+}
+
+li {
+    color: white;
+    margin-bottom: 10px;
+}
