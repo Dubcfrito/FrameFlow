@@ -5,32 +5,72 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 )
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse the form data to retrieve the file
-	r.ParseMultipartForm(10 << 20)
-	file, _, err := r.FormFile("video")
+	// Parse the form and create a file to be uploaded
+	r.ParseMultipartForm(500 << 20)
+	fmt.Println(r.Form)
+	filename := r.FormValue("filename")
+	uploadedFile, _, err := r.FormFile("file")
 	if err != nil {
-		fmt.Println("Error retrieving file:", err)
+		fmt.Println("Error uploading file", err)
 		return
 	}
-	defer file.Close()
+	defer uploadedFile.Close()
 
-	// Create a new file in the server to store the uploaded file
-	dst, err := os.Create("uploads/video.mp4") // You'll want to create a unique name for each video
+	// Read the first 512 byest to detect the MIME type
+	buffer := make([]byte, 512)
+	_, err = uploadedFile.Read(buffer)
 	if err != nil {
-		fmt.Println("Error creating file:", err)
-		return
-	}
-	defer dst.Close()
-
-	// Copy the uploaded file to the new file
-	if _, err := io.Copy(dst, file); err != nil {
-		fmt.Println("Error copying file:", err)
+		fmt.Println("Error reading file for MIME type detection:", err)
 		return
 	}
 
-	//Redirect or inform the user that the upload was succesful
+	// Reset the file reader to the beginning
+	uploadedFile.Seek(0, 0)
+
+	// Detect the MIME type
+	mimeType := http.DetectContentType(buffer)
+
+	// Determine the file extension based on the MIME type
+	var extension string
+	switch mimeType {
+	case "vide/mp4":
+		extension = ".mp4"
+	case "video/x-matroska", "video/webm":
+		extension = ".mkv"
+	default:
+		fmt.Println("Unsupported file type:", mimeType)
+		return
+	}
+
+	//Combine the filename with the extension
+	destinationPath := path.Join("uploads", filename+extension)
+
+	destinationFile, err := os.Create(destinationPath)
+	if err != nil {
+		fmt.Println("Error reaching destination path", err)
+		return
+	}
+	defer destinationFile.Close()
+
+	nBytes, err := io.Copy(destinationFile, uploadedFile)
+	if err != nil {
+		fmt.Println("Error copying file", err)
+		return
+	}
+
+	if nBytes == 0 {
+		fmt.Println("Warning: Copied file is empty")
+	}
+
+	fmt.Println("File uploaded successfully:", filename, "Size:", nBytes, "bytes")
+
+	//Redirect after successful upload
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+
+	//TODO have a better upload confirmation screen
+	//Successful upload, upload another? go back to the main page
 }

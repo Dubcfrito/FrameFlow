@@ -17,6 +17,12 @@ func main() {
 		http.ServeFile(w, r, "upload.html")
 	})
 
+	//Serve the videos page
+	http.HandleFunc("/videos", VideosHandler)
+	http.HandleFunc("/videos-page", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "videos.html")
+	})
+
 	//Serve CSS files and other static assets
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
